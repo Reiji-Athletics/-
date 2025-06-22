@@ -1,0 +1,128 @@
+import streamlit as st
+import random
+import pandas as pd
+from datetime import date
+import matplotlib.pyplot as plt
+
+st.set_page_config(page_title="RunMate+", page_icon="🏃")
+
+# 励ましの言葉
+words = [
+    "努力をしている人間を笑うな。夢を語る人間を笑うな。",
+    "諦めなければ失敗じゃない。継続できることも才能の一つだ。",
+    "お前がサボっている間に、誰かが努力している。",
+    "昨日の自分を超えること、それが本当の成長だ。",
+    "才能がなくても、継続は誰にでもできる最強の武器だ。"
+]
+
+# 初期化
+if "records" not in st.session_state:
+    st.session_state["records"] = []
+if "comments" not in st.session_state:
+    st.session_state["comments"] = []
+
+st.title("🏃 RunMate+ - 中学生向け100m走記録アプリ")
+
+with st.form("run_form"):
+    name = st.text_input("選手名")
+    inseam = st.number_input("股下の長さ（cm）", step=1)
+    time_sec = st.number_input("今回のタイム（秒）", step=0.1, format="%.2f")
+    steps = st.number_input("今回の歩数", step=1)
+    weather = st.selectbox("天気", ["晴れ", "曇り", "雨"])
+    start_conf = st.selectbox("スタートの自信", ["◯", "△", "✕"])
+    finish_tired = st.selectbox("フィニッシュで疲れたか", ["◯", "△", "✕"])
+    submitted = st.form_submit_button("記録＆分析")
+
+if submitted and name and inseam and steps:
+    step_length = 100 / steps
+    ideal_step_length = inseam / 100 * 1.14
+    ideal_steps = 100 / ideal_step_length
+
+    advice = []
+    training = []
+
+    # 歩幅に関するアドバイスと練習
+    if step_length < ideal_step_length - 0.1:
+        advice.append("歩幅が理想より小さいようです。地面を強く蹴る意識を持ちましょう。")
+        training.append("坂道ダッシュやラダーを使った爆発的トレーニング")
+    elif step_length > ideal_step_length + 0.1:
+        advice.append("歩幅が理想より大きすぎます。ピッチ走法を意識しましょう。")
+        training.append("短い距離を高頻度で走るドリル（ピッチ強化）")
+    else:
+        advice.append("歩幅は理想的です。この調子でピッチやスタートも意識しましょう。")
+
+    # スタート
+    if start_conf == "✕":
+        advice.append("スタートの姿勢を改善しましょう。")
+        training.append("クラウチングスタート練習、リアクション練習")
+    elif start_conf == "△":
+        advice.append("スタートに少し不安があるようです。")
+        training.append("スタンディングスタートや反応練習")
+
+    # フィニッシュ
+    if finish_tired == "◯":
+        advice.append("終盤にバテるなら、持久力の向上を目指しましょう。")
+        training.append("100m × 3本インターバル、200mテンポ走")
+
+    # 結果保存
+    result = {
+        "日付": date.today().isoformat(),
+        "選手名": name,
+        "タイム": time_sec,
+        "歩数": steps,
+        "歩幅": round(step_length, 2),
+        "理想歩幅": round(ideal_step_length, 2),
+        "理想歩数": int(ideal_steps),
+    }
+    st.session_state["records"].append(result)
+
+    st.header("📊 結果")
+    st.write(result)
+
+    st.subheader("🧠 アドバイス")
+    for a in advice:
+        st.markdown(f"- {a}")
+
+    st.subheader("💪 練習メニューの提案")
+    unique_training = list(set(training))  # 重複を排除
+    for t in unique_training:
+        st.markdown(f"- {t}")
+
+    st.subheader("💬 励ましの言葉")
+    st.success(random.choice(words))
+
+# 記録一覧
+st.subheader("📋 選手ごとの記録一覧")
+df = pd.DataFrame(st.session_state["records"])
+st.dataframe(df)
+
+# 折れ線グラフ
+st.subheader("📈 タイムの推移グラフ")
+if not df.empty:
+    selected_player = st.selectbox("選手を選ぶ", df["選手名"].unique())
+    player_df = df[df["選手名"] == selected_player]
+    fig, ax = plt.subplots()
+    ax.plot(player_df["日付"], player_df["タイム"], marker="o")
+    ax.set_title(f"{selected_player} のタイム推移")
+    ax.set_xlabel("日付")
+    ax.set_ylabel("タイム（秒）")
+    st.pyplot(fig)
+
+# 名前付きコメント
+st.subheader("💬 応援コメント（名前付き）")
+col1, col2 = st.columns(2)
+with col1:
+    commenter_name = st.text_input("あなたの名前", key="commenter_name")
+with col2:
+    comment_text = st.text_input("応援コメント", key="comment_text")
+
+if st.button("コメントを追加"):
+    if commenter_name and comment_text:
+        st.session_state["comments"].append(f"{commenter_name}：{comment_text}")
+        st.success("コメントを追加しました！")
+    else:
+        st.warning("名前とコメント両方を入力してください。")
+
+if st.session_state["comments"]:
+    for c in st.session_state["comments"]:
+        st.markdown(f"- {c}")
