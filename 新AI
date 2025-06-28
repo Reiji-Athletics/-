@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>武中陸上部短距離AIトレーナー</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+```
+    h1 {
+        color: #fff;
+        font-size: 2.5em;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        text-align: center;
+        margin-bottom: 30px;
+        animation: bounce 2s infinite;
+    }
+    
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+        60% { transform: translateY(-5px); }
+    }
+    
+    .container {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .input-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+        justify-content: center;
+    }
+    
+    input, button {
+        padding: 12px 16px;
+        border-radius: 12px;
+        border: 2px solid #667eea;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        min-width: 150px;
+    }
+    
+    input:focus {
+        outline: none;
+        border-color: #764ba2;
+        box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        transform: scale(1.02);
+    }
+    
+    button {
+        background: linear-gradient(45deg, #667eea, #764ba2);
+        color: white;
+        cursor: pointer;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+        transform: translateY(0);
+    }
+    
+    .file-input-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+    
+    .file-input-label {
+        display: inline-block;
+        padding: 12px 16px;
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        min-width: 150px;
+        text-align: center;
+    }
+    
+    .file-input-label:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(255, 107, 107, 0.4);
+    }
+    
+    canvas#poseCanvas {
+        max-width: 100%;
+        border: 3px solid #667eea;
+        border-radius: 15px;
+        margin: 20px 0;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        display: none;
+    }
+    
+    #graphCanvas {
+        max-width: 100%;
+        margin-top: 20px;
+        border-radius: 15px;
+    }
+    
+    #advice {
+        background: linear-gradient(45deg, #a8edea, #fed6e3);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 20px 0;
+        border-left: 5px solid #667eea;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    #advice h3 {
+        color: #333;
+        margin-top: 0;
+        text-align: center;
+    }
+    
+    .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 10px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .success {
+        background: linear-gradient(45deg, #56ab2f, #a8e6cf);
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .error {
+        background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+        color: white;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    @media (max-width: 600px) {
+        .input-group {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        input, button, .file-input-label {
+            width: 100%;
+            max-width: 300px;
+        }
+    }
+</style>
+```
+
+</head>
+<body>
+    <h1>🏃‍♂️ 武中陸上部短距離AIトレーナー 🏃‍♀️</h1>
+    <div class="container">
+        <div class="input-group">
+            <input type="text" id="nameInput" placeholder="👤 名前を入力">
+            <input type="text" id="gradeInput" placeholder="🎓 学年（例：中学2年）">
+            <input type="number" id="timeInput" placeholder="⏱️ 100mタイム（秒）" step="0.01" min="0" max="30">
+        </div>
+
+```
+    <div class="input-group">
+        <div class="file-input-wrapper">
+            <input type="file" id="imageInput" accept="image/*">
+            <div class="file-input-label">📸 画像をアップロード</div>
+        </div>
+        <button onclick="analyzeForm()">🔍 フォーム分析</button>
+        <button onclick="saveRecord()">💾 記録保存</button>
+    </div>
+    
+    <canvas id="poseCanvas"></canvas>
+    <div id="advice"></div>
+    <canvas id="graphCanvas"></canvas>
+    <canvas id="formScoreCanvas" style="margin-top: 20px;"></canvas>
+</div>
+
+<script>
+    // データストレージ（メモリベース）
+    let records = [];
+    let currentFormScore = 0;
+
+    // 画像ファイル選択時の処理
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const fileName = file.name.length > 20 ? file.name.substring(0, 20) + '...' : file.name;
+            document.querySelector('.file-input-label').textContent = `📸 ${fileName}`;
+        }
+    });
+
+    async function analyzeForm() {
+        const imageInput = document.getElementById('imageInput');
+        const canvas = document.getElementById('poseCanvas');
+        const ctx = canvas.getContext('2d');
+        const adviceDiv = document.getElementById('advice');
+
+        if (!imageInput.files[0]) {
+            showMessage('画像をアップロードしてください！', 'error');
+            return;
+        }
+
+        // ローディング表示
+        adviceDiv.innerHTML = '<div class="loading"></div>画像を分析中...';
+
+        const img = new Image();
+        img.src = URL.createObjectURL(imageInput.files[0]);
+        
+        img.onload = () => {
+            canvas.width = Math.min(img.width, 600);
+            canvas.height = (img.height * canvas.width) / img.width;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'block';
+            
+            // シミュレートされたフォーム分析
+            setTimeout(() => {
+                simulateFormAnalysis();
+            }, 2000);
+        };
+    }
+
+    function simulateFormAnalysis() {
+        const adviceDiv = document.getElementById('advice');
+        const canvas = document.getElementById('poseCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // フォーム分析のシミュレーション
+        const kneeScore = Math.random() * 40 + 60; // 60-100
+        const armScore = Math.random() * 40 + 60;  // 60-100
+        currentFormScore = Math.floor((kneeScore + armScore) / 2);
+        
+        // ポーズの描画をシミュレート
+        drawSimulatedPose(ctx);
+        
+        let advice = '<h3>🏃‍♂️ フォーム分析結果</h3>';
+        advice += `<div style="background: linear-gradient(45deg, #667eea, #764ba2); color: white; padding: 15px; border-radius: 10px; margin: 10px 0;">`;
+        advice += `<h4>総合スコア: ${currentFormScore}/100</h4>`;
+        advice += `</div>`;
+        
+        if (kneeScore < 75) {
+            advice += '<div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107;">';
+            advice += '<strong>🦵 膝の動きについて：</strong><br>';
+            advice += '膝の上げ方をもっと意識しましょう！大きくダイナミックに！<br>';
+            advice += '<strong>💪 おすすめトレーニング：</strong> 高膝走（20m × 5セット）';
+            advice += '</div>';
+        } else {
+            advice += '<div style="background: #d4edda; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">';
+            advice += '<strong>🦵 膝の動き：</strong> とても良いフォームです！この調子をキープ！';
+            advice += '</div>';
+        }
+        
+        if (armScore < 75) {
+            advice += '<div style="background: #fff3cd; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #ffc107;">';
+            advice += '<strong>💪 腕の振りについて：</strong><br>';
+            advice += '腕をもっと力強く振ってリズムを作りましょう！<br>';
+            advice += '<strong>💪 おすすめトレーニング：</strong> 腕振りドリル（30秒 × 3セット）';
+            advice += '</div>';
+        } else {
+            advice += '<div style="background: #d4edda; padding: 10px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #28a745;">';
+            advice += '<strong>💪 腕の振り：</strong> 素晴らしいリズムです！継続してください！';
+            advice += '</div>';
+        }
+        
+        advice += '<div style="background: linear-gradient(45deg, #a8edea, #fed6e3); padding: 15px; border-radius: 10px; margin-top: 15px;">';
+        advice += '<strong>🎯 次のステップ：</strong><br>';
+        advice += '定期的に練習を続けて、フォームと記録の両方を向上させましょう！<br>';
+        advice += '毎週の記録を比較して成長を実感してください！';
+        advice += '</div>';
+        
+        adviceDiv.innerHTML = advice;
+    }
+
+    function drawSimulatedPose(ctx) {
+        const width = ctx.canvas.width;
+        const height = ctx.canvas.height;
+        
+        // 簡単なスティックフィギュアを描画
+        ctx.strokeStyle = '#667eea';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        
+        // 体の中心点を計算
+        const centerX = width * 0.5;
+        const centerY = height * 0.4;
+        
+        // 頭
+        ctx.beginPath();
+        ctx.arc(centerX, centerY - 40, 20, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // 体
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY - 20);
+        ctx.lineTo(centerX, centerY + 60);
+        ctx.stroke();
+        
+        // 腕
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX - 40, centerY - 20);
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + 30, centerY + 20);
+        ctx.stroke();
+        
+        // 脚
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY + 60);
+        ctx.lineTo(centerX - 30, centerY + 120);
+        ctx.moveTo(centerX, centerY + 60);
+        ctx.lineTo(centerX + 40, centerY + 100);
+        ctx.stroke();
+        
+        // 分析ポイントをハイライト
+        ctx.strokeStyle = '#ff6b6b';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 5]);
+        
+        // 膝の角度を示す円
+        ctx.beginPath();
+        ctx.arc(centerX - 15, centerY + 90, 15, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        // 肘の角度を示す円
+        ctx.beginPath();
+        ctx.arc(centerX - 20, centerY - 10, 12, 0, 2 * Math.PI);
+        ctx.stroke();
+        
+        ctx.setLineDash([]);
+    }
+
+    function saveRecord() {
+        const name = document.getElementById('nameInput').value.trim();
+        const grade = document.getElementById('gradeInput').value.trim();
+        const time = parseFloat(document.getElementById('timeInput').value);
+        
+        if (!name || !grade || !time || time <= 0) {
+            showMessage('名前、学年、タイムをすべて入力してください！', 'error');
+            return;
+        }
+
+        const record = {
+            id: Date.now(),
+            name,
+            grade,
+            time,
+            formScore: currentFormScore || Math.floor(Math.random() * 20 + 80),
+            date: new Date().toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
+        };
+        
+        records.push(record);
+        showMessage(`${name}さんの記録を保存しました！`, 'success');
+        updateGraph();
+        
+        // フォームをリセット
+        document.getElementById('nameInput').value = '';
+        document.getElementById('gradeInput').value = '';
+        document.getElementById('timeInput').value = '';
+        document.getElementById('imageInput').value = '';
+        document.querySelector('.file-input-label').textContent = '📸 画像をアップロード';
+    }
+
+    function showMessage(message, type) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = type;
+        messageDiv.textContent = message;
+        document.querySelector('.container').insertBefore(
+            messageDiv, 
+            document.querySelector('.container').firstChild
+        );
+        
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+
+    let chart;
+    let formChart;
+    
+    function createFormScoreChart() {
+        if (records.length === 0) return;
+        
+        const labels = records.map(r => r.date);
+        const formScores = records.map(r => r.formScore);
+        
+        const ctx = document.getElementById('formScoreCanvas').getContext('2d');
+        if (formChart) formChart.destroy();
+        
+        formChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: records.map(r => `${r.name} (${r.date})`),
+                datasets: [{
+                    label: 'フォームスコア',
+                    data: formScores,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.8)',
+                        'rgba(54, 162, 235, 0.8)',
+                        'rgba(255, 205, 86, 0.8)',
+                        'rgba(75, 192, 192, 0.8)',
+                        'rgba(153, 102, 255, 0.8)',
+                        'rgba(255, 159, 64, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 205, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 3,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '🎯 フォームスコア分析',
+                        font: {
+                            size: 20,
+                            weight: 'bold'
+                        },
+                        padding: 20,
+                        color: '#333'
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            color: '#333',
+                            padding: 15,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: function(context) {
+                                const record = records[context.dataIndex];
+                                return [
+                                    `フォームスコア: ${context.parsed}点`,
+                                    `100mタイム: ${record.time}秒`,
+                                    `学年: ${record.grade}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    duration: 2000,
+                    easing: 'easeOutBounce'
+                }
+            }
+        });
+    }
+    function updateGraph() {
+        if (records.length === 0) return;
+        
+        const labels = records.map(r => r.date);
+        const times = records.map(r => r.time);
+        const formScores = records.map(r => r.formScore);
+        const nationalAvg = records.map(() => 14.5); // 仮の全国平均タイム
+
+        const ctx = document.getElementById('graphCanvas').getContext('2d');
+        if (chart) chart.destroy();
+        
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: '⏱️ 100mタイム（秒）',
+                        data: times,
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 205, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 205, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '📊 100m走タイム記録',
+                        font: {
+                            size: 20,
+                            weight: 'bold'
+                        },
+                        padding: 20,
+                        color: '#333'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#333',
+                            padding: 20
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        cornerRadius: 10,
+                        displayColors: true,
+                        callbacks: {
+                            label: function(context) {
+                                const record = records[context.dataIndex];
+                                return [
+                                    `タイム: ${context.parsed.y}秒`,
+                                    `名前: ${record.name}`,
+                                    `学年: ${record.grade}`,
+                                    `フォームスコア: ${record.formScore}点`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: Math.min(...times) - 1,
+                        max: Math.max(...times) + 1,
+                        title: {
+                            display: true,
+                            text: 'タイム（秒）',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#333'
+                        },
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)',
+                            borderWidth: 2
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            color: '#333',
+                            callback: function(value) {
+                                return value.toFixed(1) + '秒';
+                            }
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '記録日',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            color: '#333'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            color: '#333'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1500,
+                    easing: 'easeOutBounce'
+                }
+            }
+        });
+        
+        // フォームスコアの別グラフを追加
+        setTimeout(() => {
+            createFormScoreChart();
+        }, 100);
+    }
+
+    // 初期化
+    document.addEventListener('DOMContentLoaded', function() {
+        // サンプルデータを追加（デモ用）
+        const sampleData = [
+            { id: 1, name: '田中太郎', grade: '中学2年', time: 15.2, formScore: 78, date: '2025/6/1' },
+            { id: 2, name: '田中太郎', grade: '中学2年', time: 14.8, formScore: 82, date: '2025/6/15' },
+            { id: 3, name: '田中太郎', grade: '中学2年', time: 14.5, formScore: 85, date: '2025/6/28' }
+        ];
+        
+        records.push(...sampleData);
+        updateGraph();
+    });
+</script>
+```
+
+</body>
+</html>
